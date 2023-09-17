@@ -25,16 +25,18 @@ pub enum LexerError {
 
 pub type Token = TokenType;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum NumericType {
     Integer,
     FloatingPoint
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     EOF,
+
+    EOL, // End of Line
 
     /* ([]) */
     Puncutation { raw: char, kind: PunctuationKind },
@@ -48,9 +50,11 @@ pub enum TokenType {
     Identifier(String),
 
     Numeric{raw: String, hint: NumericType},
+
+    Symobl(String)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PunctuationKind {
     Open(BalancingDepthType),
     Close(BalancingDepthType),
@@ -181,6 +185,7 @@ impl<'a> Lexer<'a> {
                     }
 
                 }
+            
                 Some(c) => {
                     return_string.push(c);
                 }
@@ -203,11 +208,22 @@ impl<'a> Lexer<'a> {
                     self.consume_char();
                 }
                 _ => {
-                    break Ok(TokenType::Identifier(return_string));
+                    break Ok(self.match_symbol(return_string));
                 }
             }
         }
 
+    }
+
+    fn match_symbol(&mut self, identifier: String) -> TokenType {
+        if match identifier.as_ref() {
+            "false" | "true" | "proc" | "if" | "fi" | "loop" | "break" | "print" | "input"=> true,
+            _ => false
+        }{
+            TokenType::Symobl(identifier)
+        }else {
+            TokenType::Identifier(identifier)
+        }
     }
 
     fn match_operator(&mut self, start: char) -> Result<TokenType, LexerError> {
@@ -254,14 +270,14 @@ impl<'a> Lexer<'a> {
                 raw: c,
                 kind: PunctuationKind::Close(self.pop_symbol(&c)?),
             }),
-
             '0' ..= '9' | '.'=> self.match_number(c),
             '"' | '\'' => self.match_string(c),
             '+' | '-' | '*' | '/' | '\\' | '=' | '|' | '&' | '<' | '>' => self.match_operator(c),
-            ',' | ';' => Ok(TokenType::Puncutation {
+            ',' => Ok(TokenType::Puncutation {
                 raw: c,
                 kind: PunctuationKind::Seperator
             }),
+            ';' => Ok(TokenType::EOL),
             'a' ..= 'z' | 'A' ..= 'Z'=> self.match_identifier(c), 
             _ => Err(LexerError::UnknownSymbol {
                 symbol: c.to_string(),
@@ -300,6 +316,24 @@ impl<'a> Lexer<'a> {
 
         if let Some(c) = self.consume_char() {
             self.transform_to_type(c)
+        } else {
+            Ok(TokenType::EOF)
+        }
+    }
+
+    pub fn peek_next_token(&mut self) -> Result<TokenType, LexerError>{
+
+        let cur_col = self.cur_col.clone();
+        let cur_line = self.cur_line.clone();
+        let codepoint_offset = self.codepoint_offset.clone();
+
+        if let Some(c) = self.consume_char() { 
+            let t_to_type = self.transform_to_type(c);
+            self.cur_col = cur_col;
+            self.cur_line = cur_line;
+            self.codepoint_offset = codepoint_offset;
+
+            t_to_type
         } else {
             Ok(TokenType::EOF)
         }
