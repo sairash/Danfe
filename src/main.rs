@@ -1,7 +1,10 @@
 use clap::{arg, Command};
 
 use lexer::TokenType;
+
 mod lexer;
+mod ast;
+mod parser;
 
 
 fn cli() -> Command {
@@ -28,13 +31,12 @@ fn main() -> std::io::Result<()> {
             let text = std::fs::read_to_string(file_name)?;
             let mut lex  = lexer::Lexer::new(&text);
 
-            loop {
-                match lex.next_token() {
-                    Ok(TokenType::EOF)=> break,
-                    Ok(tok) => println!("{0:?}", tok),
-                    Err(err) => println!("{0:?}", err)
-                }
-            }
+            
+            let mut par = parser::Parser::new(lex);
+            let par_program =  par.walk();
+
+            println!("{:#?}", par_program);
+            //println!("{:?}", par_program);
         }
         _ => {}
     }
