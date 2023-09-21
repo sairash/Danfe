@@ -5,6 +5,7 @@ use lexer::TokenType;
 mod lexer;
 mod ast;
 mod parser;
+mod compiler;
 
 
 fn cli() -> Command {
@@ -35,8 +36,14 @@ fn main() -> std::io::Result<()> {
             let mut par = parser::Parser::new(lex);
             let par_program =  par.walk();
 
-            println!("{:#?}", par_program);
-            //println!("{:?}", par_program);
+            // println!("{:#?}", par_program);
+            println!("{:?}", par_program);
+            let mut new_compiler = compiler::Compile::new("output");
+
+            for expr in par_program.exprs {
+                new_compiler.evaluate(expr)
+            }
+            new_compiler.execute();
         }
         _ => {}
     }

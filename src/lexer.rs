@@ -217,7 +217,7 @@ impl<'a> Lexer<'a> {
 
     fn match_symbol(&mut self, identifier: String) -> TokenType {
         if match identifier.as_ref() {
-            "false" | "true" | "proc" | "if" | "fi" | "loop" | "break" | "print" | "input"=> true,
+            "false" | "true" | "proc" | "if" | "else" | "loop" | "break" | "print" | "input" => true,
             _ => false
         }{
             TokenType::Symobl(identifier)
@@ -230,7 +230,7 @@ impl<'a> Lexer<'a> {
         let mut return_operators = start.to_string();
 
         match self.chars.peek() {
-            Some(c) if *c == '=' && (start == '+' || start == '-' || start == '=' || start == '>' || start == '<')   => {
+            Some(c) if *c == '=' && (start == '+' || start == '-' || start == '=' || start == '>' || start == '<' || start == '%')   => {
                 return_operators.push(*c);
                 self.consume_char();
             }
@@ -272,7 +272,7 @@ impl<'a> Lexer<'a> {
             }),
             '0' ..= '9' | '.'=> self.match_number(c),
             '"' | '\'' => self.match_string(c),
-            '+' | '-' | '*' | '/' | '\\' | '=' | '|' | '&' | '<' | '>' => self.match_operator(c),
+            '+' | '-' | '*' | '/' | '\\' | '%' |'=' | '|' | '&' | '<' | '>' => self.match_operator(c),
             ',' => Ok(TokenType::Puncutation {
                 raw: c,
                 kind: PunctuationKind::Seperator

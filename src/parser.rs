@@ -1,5 +1,3 @@
-use core::panic;
-
 use crate::ast::*;
 use crate::lexer::*;
 
@@ -72,12 +70,12 @@ impl <'a> Parser<'a> {
                 Token::Operators(op) => {
                     if op == "+".to_string() {
                         self.eat(TokenType::Operators(op));
-                        let right = self.parse_term();
-                        left = Expr::OpExpr(Box::new(OpExpr::Operator(Operator::Plus, left, right)))
+                    let right = self.parse_term();
+                        left = Expr::OpExpr(Box::new(OpExpr::operator(Operator::Plus, left, right)))
                     }else if op == "-".to_string() {
                         self.eat(TokenType::Operators(op));
                         let right = self.parse_term();
-                        left = Expr::OpExpr(Box::new(OpExpr::Operator(Operator::Substract, left, right))) 
+                        left = Expr::OpExpr(Box::new(OpExpr::operator(Operator::Substract, left, right))) 
                     }else {
                         break;
                     }
@@ -98,11 +96,19 @@ impl <'a> Parser<'a> {
                     if op == "/".to_string() {
                         self.eat(TokenType::Operators(op));
                         let right = self.parse_factor();
-                        left = Expr::OpExpr(Box::new(OpExpr::Operator(Operator::Division, left, right))) 
+                        left = Expr::OpExpr(Box::new(OpExpr::operator(Operator::Division, left, right))) 
                     }else if op == "*".to_string() {
                         self.eat(TokenType::Operators(op));
                         let right = self.parse_factor();
-                        left = Expr::OpExpr(Box::new(OpExpr::Operator(Operator::Multiply, left, right)))
+                        left = Expr::OpExpr(Box::new(OpExpr::operator(Operator::Multiply, left, right)))
+                    }else if op == "%".to_string() {
+                        self.eat(TokenType::Operators(op));
+                        let right = self.parse_factor();
+                        left = Expr::OpExpr(Box::new(OpExpr::operator(Operator::Modulos, left, right))) 
+                    }else if op == "==".to_string() {
+                        self.eat(TokenType::Operators(op));
+                        let right = self.parse_factor();
+                        left = Expr::OpExpr(Box::new(OpExpr::operator(Operator::Equal, left, right))) 
                     }else {
                         break;
                     }
@@ -113,6 +119,7 @@ impl <'a> Parser<'a> {
 
         left
     }
+
 
     fn parse_factor(&mut self) -> Expr {
         match self.current_token.clone() {
@@ -171,6 +178,36 @@ impl <'a> Parser<'a> {
                     }
                 }else {
                     panic!("The {:?} identefier is not allowed.", i)
+                }
+            },
+            TokenType::Symobl(sym) => {
+                self.eat(TokenType::Symobl(sym.clone()));
+
+                match sym.as_ref() {
+                    "print" => {
+                        match self.current_token.clone() {
+                            TokenType::Puncutation { raw, kind } => {
+                                if raw == '(' {
+                                    match kind {
+                                        PunctuationKind::Open(depth) => {
+                                            self.eat(TokenType::Puncutation { raw: raw, kind: kind });
+                                            let expr = self.parse_expression();
+                                            assert_eq!(self.current_token, Token::Puncutation{raw: ')', kind:PunctuationKind::Close(depth)});
+                                            self.eat(TokenType::Puncutation { raw: ')', kind: PunctuationKind::Close(depth) });
+                                            Expr::OpExpr(Box::new(OpExpr::function_op(Operator::Call("print".to_string()), expr)))
+                                        }
+                                        _=>{panic!("Print is a function, use it as print(\"Hello World\")")}
+                                    }
+                                }else {
+                                    unimplemented!()
+                                }
+                            }
+                            _ => {panic!("Print is a function, use it as print(\"Hello World\")")}
+                        }
+                    }
+                    _ => {
+                        unimplemented!()
+                    }
                 }
             },
             _ => panic!("Unexpected token: {:?}", self.current_token),

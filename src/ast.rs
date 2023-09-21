@@ -60,7 +60,7 @@ pub enum Operator {
     BooleanAnd,
     BooleanEqual,
 
-    Call,
+    Call(String),
     Index,
 
     Assignment,
@@ -74,8 +74,12 @@ pub struct OpExpr {
 }
 
 impl OpExpr {
-    pub fn Operator(op: Operator, mut left: Expr, right: Expr) -> OpExpr {
+    pub fn operator(op: Operator, left: Expr, right: Expr) -> OpExpr {
         OpExpr { op, args: vec![left, right]}
+    }
+    
+    pub fn function_op(op: Operator, args: Expr) -> OpExpr {
+        OpExpr { op, args: vec![args] }
     }
 }
 
