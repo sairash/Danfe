@@ -1,59 +1,28 @@
-inc "./other.df"
+print(10 + 20 * 10)
+print(20 * (10 - 10) + 50)
+print( 20 == 20 )
 
-x := 10
-y := "Saira\"s\"h"
+x := 0
 
-array_of_characters := {'s', 'a', 'i', 'r', 's', 'h'}
-Lexer := {
-    name = 'Sairash',
-    pronouns = {'he', 'him'},
-    func = {:(x, y) -> {
-        if x > y {
-            return x - y
-        }else {
-            return y - x
-        }
-    }}
-}
+loop((x, x < 10, x++) -> :{
 
-func_table := {
-    {:(x, y) -> {
-        if x > y {
-            return x - y
-        }else {
-            return y - x
-        }
-    }}
-}
+})
 
-lexer["func"](x, 100)
-lexer.func(x, 100)
-func_table[0](x, 100)
+my_new_function  = ((x, y) -> :{
+    print(x, y)
+})
 
 
-if x == 10 && y == "Sairash" {
-    print("Sairash is epic!")
-}else{
-    print("Sairash is still epic")
-}
+if(
+    (x < 5) -> :{
+        print("Small")
+}, 
+    (x == 5)-> :{
+        print("Medium")
+}, 
+    (_) ->:{
+        print("Large")
+})
 
-func add(x,y) {
-    return x + y
-}
 
-subs := {:(x, y) -> {
-    if x > y {
-        return x - y
-    }else {
-        return y - x
-    }
-}}
-
-x = 20
-
-z := add(x, 20)
-a := subs(100, x)
-
-loop x until x <= 100 {
-    x++
-}
+my_new_function(1,2)
