@@ -51,7 +51,9 @@ pub enum TokenType {
 
     Numeric{raw: String, hint: NumericType},
 
-    Symobl(String)
+    Symobl(String),
+
+    Comment
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -260,6 +262,7 @@ impl<'a> Lexer<'a> {
 
     }
 
+
     fn transform_to_type(&mut self, c: char) -> Result<TokenType, LexerError> {
         match c {
             '(' | '[' | '{' => Ok(TokenType::Puncutation {
@@ -273,11 +276,27 @@ impl<'a> Lexer<'a> {
             '0' ..= '9' | '.'=> self.match_number(c),
             '"' | '\'' => self.match_string(c),
             '+' | '-' | '*' | '/' | '\\' | '%' |'=' | '|' | '&' | '<' | '>' => self.match_operator(c),
-            ',' => Ok(TokenType::Puncutation {
+            ','| ';' => Ok(TokenType::Puncutation {
                 raw: c,
                 kind: PunctuationKind::Seperator
             }),
-            ';' => Ok(TokenType::EOL),
+            '#' => Ok({
+                loop {
+                    match self.chars.next() {
+                        Some(c) => {
+                            if c == '\n'  {
+                                break;
+                            }
+                        }
+                        None => {
+                            break;
+                        }
+                    }
+                }
+                TokenType::Comment
+
+            }),
+            '\n' => Ok(TokenType::EOL),
             'a' ..= 'z' | 'A' ..= 'Z'=> self.match_identifier(c), 
             _ => Err(LexerError::UnknownSymbol {
                 symbol: c.to_string(),
@@ -304,7 +323,7 @@ impl<'a> Lexer<'a> {
 
     fn skip_whitespace(&mut self) {
         while let Some(c) = self.chars.peek() {
-            if !c.is_whitespace() {
+            if !c.is_whitespace() || *c == '\n' {
                 break;
             }
             self.consume_char();
@@ -313,7 +332,7 @@ impl<'a> Lexer<'a> {
 
     pub fn next_token(&mut self) -> Result<TokenType, LexerError> {
         self.skip_whitespace();
-
+        
         if let Some(c) = self.consume_char() {
             self.transform_to_type(c)
         } else {
