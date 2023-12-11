@@ -280,22 +280,14 @@ impl<'a> Lexer<'a> {
                 raw: c,
                 kind: PunctuationKind::Seperator
             }),
-            '#' => Ok({
-                loop {
-                    match self.chars.next() {
-                        Some(c) => {
-                            if c == '\n'  {
-                                break;
-                            }
-                        }
-                        None => {
-                            break;
-                        }
+            '#' => {
+                while let Some(c) = self.chars.next() {
+                    if c == '\n' {
+                        break;
                     }
                 }
-                TokenType::Comment
-
-            }),
+                Ok(TokenType::Comment)
+            },
             '\n' => Ok(TokenType::EOL),
             'a' ..= 'z' | 'A' ..= 'Z'=> self.match_identifier(c), 
             _ => Err(LexerError::UnknownSymbol {
