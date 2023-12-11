@@ -189,6 +189,7 @@ impl Compile {
                 Literal::FloatingPoint(float_val) => self.assemble_push(float_val),
                 _ => {}
             },
+            _=> {},
         }
     }
 
