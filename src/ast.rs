@@ -61,7 +61,9 @@ pub enum Operator {
     BooleanEqual,
 
     Call(String),
+    Define(Expr),
     Index,
+
 
     Assignment,
 }
@@ -87,7 +89,8 @@ impl OpExpr {
 #[derive(Debug, Clone)]
 pub enum Expr {
     OpExpr(Box<OpExpr>),
-    OpLiteral(Box<Literal>)
+    OpLiteral(Box<Literal>),
+    OPComment,
 }
 
 impl Expr {
