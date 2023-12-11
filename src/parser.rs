@@ -89,6 +89,7 @@ impl <'a> Parser<'a> {
 
     fn parse_term(&mut self) -> Expr {
         let mut left = self.parse_factor();
+        // println!("{:?}", left);
 
         while let token = self.current_token.clone() {
             match token {
@@ -141,6 +142,7 @@ impl <'a> Parser<'a> {
                         PunctuationKind::Open(depth) => {        
                             self.eat(TokenType::Puncutation { raw: raw, kind: kind });
                             let expr = self.parse_expression();
+                            self.remove_eol();
                             assert_eq!(self.current_token, Token::Puncutation{raw: ')', kind:PunctuationKind::Close(depth)});
                             self.eat(TokenType::Puncutation { raw: ')', kind: PunctuationKind::Close(depth) });
                             expr
@@ -185,32 +187,94 @@ impl <'a> Parser<'a> {
 
                 match sym.as_ref() {
                     "print" => {
-                        match self.current_token.clone() {
-                            TokenType::Puncutation { raw, kind } => {
-                                if raw == '(' {
-                                    match kind {
-                                        PunctuationKind::Open(depth) => {
-                                            self.eat(TokenType::Puncutation { raw: raw, kind: kind });
-                                            let expr = self.parse_expression();
-                                            assert_eq!(self.current_token, Token::Puncutation{raw: ')', kind:PunctuationKind::Close(depth)});
-                                            self.eat(TokenType::Puncutation { raw: ')', kind: PunctuationKind::Close(depth) });
-                                            Expr::OpExpr(Box::new(OpExpr::function_op(Operator::Call("print".to_string()), expr)))
-                                        }
-                                        _=>{panic!("Print is a function, use it as print(\"Hello World\")")}
-                                    }
-                                }else {
-                                    unimplemented!()
-                                }
-                            }
-                            _ => {panic!("Print is a function, use it as print(\"Hello World\")")}
-                        }
+                        self.parse_function("print")
+                    }
+                    "if" => {
+                        self.parse_function("if")
                     }
                     _ => {
                         unimplemented!()
                     }
                 }
             },
+            TokenType::Comment =>{
+                self.eat(TokenType::Comment);
+                Expr::OPComment
+            }
+            TokenType::EOL => {
+                self.eat(TokenType::EOL);
+                self.parse_expression()
+            }
             _ => panic!("Unexpected token: {:?}", self.current_token),
+        }
+    }
+
+    fn remove_eol(&mut self){
+        loop {
+            match self.current_token {
+                TokenType::EOL=>{
+                    self.eat(TokenType::EOL)
+                }
+                (_)=>{
+                    break;
+                }
+            }
+        }
+    }
+
+    fn parse_function(&mut self, function_name: &str) -> Expr {
+        match self.current_token.clone() {
+            TokenType::Puncutation { raw, kind } => {
+                if raw == '(' {
+                    match kind {
+                        PunctuationKind::Open(depth) => {
+                            self.eat(TokenType::Puncutation { raw: raw, kind: kind });
+                            let expr = self.parse_expression();
+                            self.remove_eol();
+                            assert_eq!(self.current_token, Token::Puncutation{raw: ')', kind:PunctuationKind::Close(depth)});
+                            self.eat(TokenType::Puncutation { raw: ')', kind: PunctuationKind::Close(depth) });
+                            match self.current_token.clone()  {
+                                TokenType::EOL =>{
+                                    self.eat(TokenType::EOL);
+                                    Expr::OpExpr(Box::new(OpExpr::function_op(Operator::Call(function_name.to_string()), expr)))
+                                }
+                                TokenType::EOF =>{
+                                    self.eat(TokenType::EOF);
+                                    Expr::OpExpr(Box::new(OpExpr::function_op(Operator::Call(function_name.to_string()), expr)))
+                                }
+                                TokenType::Puncutation { raw, kind }=>{
+                                    if raw == '{' {
+                                        match kind {
+                                            PunctuationKind::Open(depth) =>{
+                                                self.eat(TokenType::Puncutation { raw: raw, kind: kind });
+                                                let new_expr = self.parse_expression();
+                                                self.remove_eol();
+                                                assert_eq!(self.current_token, Token::Puncutation{raw: '}', kind:PunctuationKind::Close(depth)});
+                                                self.eat(TokenType::Puncutation { raw: '}', kind: PunctuationKind::Close(depth) });
+                                                Expr::OpExpr(Box::new(OpExpr::function_op(Operator::Define(expr), new_expr)))
+                                                }
+                                            _=> unimplemented!()
+                                        }
+                                    }else if  raw == '}' {
+                                        expr
+                                    }else{
+                                        panic!("This is not correct {}", raw)
+                                    }
+                                }
+                                _ =>unimplemented!()
+                            }
+                        }
+                        PunctuationKind::Seperator =>{
+                            self.eat(TokenType::Puncutation { raw: raw, kind: kind });
+                            self.parse_expression()
+                        }
+                        _=>{panic!("Print is a function, use it as print(\"Hello World\")")}
+                    }
+                }else {
+                    unimplemented!()
+                }
+            }
+            _ => {panic!("Print is a function, use it as print(\"Hello World\")")}
         }
     }
 
@@ -219,23 +283,22 @@ impl <'a> Parser<'a> {
         
         let mut expressions = self.parse_expression();
         loop {
-           match self.current_token {
+            match self.current_token {
                 TokenType::EOL => {
-                    program.exprs.push(expressions);
                     self.eat(TokenType::EOL);
-                    if self.current_token == TokenType::EOF {
-                        break;
-                    }
-                    expressions = self.parse_expression();
-                },
+                }
                 TokenType::EOF => {
                     program.exprs.push(expressions);
                     break;
                 },
                 _ => {
-                    break;
+                    program.exprs.push(expressions);
+                    if self.current_token == TokenType::EOF {
+                        break;
+                    }
+                    expressions = self.parse_expression();
                 }
-           } 
+            }
         }
         program
     }
